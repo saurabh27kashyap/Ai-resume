@@ -160,38 +160,55 @@ const ResumeBuilder: React.FC = () => {
     setIsDownloading(true);
     
     try {
-      // First, make the resume visible even if it's not in the active tab
-      let tempElement = resumeElement;
-      let needsCleanup = false;
+      // First make sure we're showing the preview tab since we need to capture its content
+      const originalTab = activeTab;
+      setActiveTab('preview');
       
-      if (activeTab !== 'preview') {
-        // If we're not in preview mode, create a temporary div for rendering
-        tempElement = document.createElement('div');
-        tempElement.style.position = 'absolute';
-        tempElement.style.left = '-9999px';
-        tempElement.style.top = '-9999px';
-        tempElement.id = 'temp-resume-for-pdf';
-        document.body.appendChild(tempElement);
-        
-        // Clone the resume preview content into this temporary div
-        const previewContent = resumeElement.cloneNode(true);
-        tempElement.appendChild(previewContent);
-        needsCleanup = true;
-      }
+      // Give the DOM time to update before capturing
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      const canvas = await html2canvas(tempElement.firstChild as HTMLElement, {
+      // Create a temporary div that will clone the resume content for proper rendering
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '816px'; // Letter width in px (8.5in * 96dpi)
+      tempDiv.style.padding = '0';
+      tempDiv.style.background = 'white';
+      tempDiv.id = 'temp-resume-for-pdf';
+      document.body.appendChild(tempDiv);
+      
+      // Clone the resume preview content
+      tempDiv.innerHTML = resumeElement.innerHTML;
+      
+      // Apply necessary styles for proper rendering
+      const styles = document.createElement('style');
+      styles.innerHTML = `
+        #temp-resume-for-pdf * {
+          visibility: visible !important;
+          opacity: 1 !important;
+          color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+        }
+        #temp-resume-for-pdf {
+          background: white !important;
+        }
+      `;
+      tempDiv.prepend(styles);
+      
+      // Capture the content with html2canvas
+      const canvas = await html2canvas(tempDiv, {
         scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#FFFFFF',
-        windowWidth: 900,
-        windowHeight: 1200
+        allowTaint: true,
+        removeContainer: true,
+        windowWidth: 816,
       });
       
-      // Clean up temp element if we created one
-      if (needsCleanup) {
-        document.body.removeChild(tempElement);
-      }
+      // Clean up temp element
+      document.body.removeChild(tempDiv);
       
       const imgData = canvas.toDataURL('image/png');
       
@@ -212,6 +229,11 @@ const ResumeBuilder: React.FC = () => {
         : 'Resume.pdf';
       
       pdf.save(fileName);
+      
+      // Restore original tab if needed
+      if (originalTab !== 'preview') {
+        setActiveTab(originalTab);
+      }
       
       toast({
         title: "Success!",
