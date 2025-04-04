@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
 
 interface ResumePreviewProps {
   resumeData: {
@@ -35,12 +36,50 @@ interface ResumePreviewProps {
       current: boolean;
       description: string;
     }>;
+    projects: Array<{
+      id: string;
+      title: string;
+      description: string;
+      technologies: string;
+      link?: string;
+      startDate: string;
+      endDate: string;
+      current: boolean;
+    }>;
+    certificates: Array<{
+      id: string;
+      name: string;
+      issuer: string;
+      date: string;
+      description: string;
+      link?: string;
+    }>;
     skills: string[];
   };
 }
 
 const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData }) => {
-  const { personalInfo, workExperience, education, skills } = resumeData;
+  const { personalInfo, workExperience, education, projects, certificates, skills } = resumeData;
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      return format(new Date(dateString), "MMM yyyy");
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const getDateRange = (startDate: string, endDate: string, current: boolean) => {
+    const start = formatDate(startDate);
+    const end = current ? 'Present' : formatDate(endDate);
+    
+    if (!start && !end) return '';
+    if (!start) return end;
+    if (!end || end === 'Present') return `${start} - Present`;
+    
+    return `${start} - ${end}`;
+  };
 
   return (
     <Card className="resume-paper overflow-auto animate-scale-in">
@@ -118,16 +157,63 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData }) => {
                       </h4>
                     </div>
                     
-                    {(exp.startDate || exp.endDate) && (
-                      <p className="text-xs text-resume-secondary whitespace-nowrap">
-                        {exp.startDate || "Start Date"} – {exp.endDate || "Present"}
-                      </p>
-                    )}
+                    <p className="text-xs text-resume-secondary whitespace-nowrap">
+                      {getDateRange(exp.startDate, exp.endDate, exp.current)}
+                    </p>
                   </div>
                   
                   {exp.description && (
                     <p className="text-sm text-resume-secondary mt-2">
                       {exp.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Projects */}
+        {projects.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-md font-semibold text-resume-primary uppercase tracking-wider mb-2">
+              Projects
+            </h2>
+            <Separator className="mb-3" />
+            
+            <div className="space-y-4">
+              {projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-md font-medium text-resume-primary">
+                        {project.title || "Project Title"}
+                        {project.link && (
+                          <a 
+                            href={project.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-resume-accent ml-2"
+                          >
+                            [Link]
+                          </a>
+                        )}
+                      </h3>
+                      {project.technologies && (
+                        <h4 className="text-sm italic text-resume-secondary">
+                          {project.technologies}
+                        </h4>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-resume-secondary whitespace-nowrap">
+                      {getDateRange(project.startDate, project.endDate, project.current)}
+                    </p>
+                  </div>
+                  
+                  {project.description && (
+                    <p className="text-sm text-resume-secondary mt-2">
+                      {project.description}
                     </p>
                   )}
                 </div>
@@ -158,16 +244,63 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData }) => {
                       </h4>
                     </div>
                     
-                    {(edu.startDate || edu.endDate) && (
-                      <p className="text-xs text-resume-secondary whitespace-nowrap">
-                        {edu.startDate || "Start Date"} – {edu.endDate || "Present"}
-                      </p>
-                    )}
+                    <p className="text-xs text-resume-secondary whitespace-nowrap">
+                      {getDateRange(edu.startDate, edu.endDate, edu.current)}
+                    </p>
                   </div>
                   
                   {edu.description && (
                     <p className="text-sm text-resume-secondary mt-2">
                       {edu.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Certificates */}
+        {certificates.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-md font-semibold text-resume-primary uppercase tracking-wider mb-2">
+              Certifications
+            </h2>
+            <Separator className="mb-3" />
+            
+            <div className="space-y-4">
+              {certificates.map((cert) => (
+                <div key={cert.id}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-md font-medium text-resume-primary">
+                        {cert.name}
+                        {cert.link && (
+                          <a 
+                            href={cert.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-resume-accent ml-2"
+                          >
+                            [Verify]
+                          </a>
+                        )}
+                      </h3>
+                      <h4 className="text-sm font-medium text-resume-secondary">
+                        {cert.issuer}
+                      </h4>
+                    </div>
+                    
+                    {cert.date && (
+                      <p className="text-xs text-resume-secondary whitespace-nowrap">
+                        {formatDate(cert.date)}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {cert.description && (
+                    <p className="text-sm text-resume-secondary mt-2">
+                      {cert.description}
                     </p>
                   )}
                 </div>

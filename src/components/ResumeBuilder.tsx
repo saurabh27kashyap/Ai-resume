@@ -9,6 +9,8 @@ import PersonalInfoSection from "./PersonalInfoSection";
 import WorkExperienceSection from "./WorkExperienceSection";
 import EducationSection from "./EducationSection";
 import SkillsSection from "./SkillsSection";
+import ProjectsSection from "./ProjectsSection";
+import CertificatesSection from "./CertificatesSection";
 import ResumePreview from "./ResumePreview";
 import AISuggestions from "./AISuggestions";
 import { Download, Eye, Edit } from "lucide-react";
@@ -44,6 +46,24 @@ interface ResumeData {
     current: boolean;
     description: string;
   }>;
+  projects: Array<{
+    id: string;
+    title: string;
+    description: string;
+    technologies: string;
+    link?: string;
+    startDate: string;
+    endDate: string;
+    current: boolean;
+  }>;
+  certificates: Array<{
+    id: string;
+    name: string;
+    issuer: string;
+    date: string;
+    description: string;
+    link?: string;
+  }>;
   skills: string[];
 }
 
@@ -59,6 +79,8 @@ const defaultResumeData: ResumeData = {
   },
   workExperience: [],
   education: [],
+  projects: [],
+  certificates: [],
   skills: [],
 };
 
@@ -89,6 +111,20 @@ const ResumeBuilder: React.FC = () => {
     setResumeData(prev => ({
       ...prev,
       education,
+    }));
+  };
+  
+  const updateProjects = (projects: ResumeData['projects']) => {
+    setResumeData(prev => ({
+      ...prev,
+      projects,
+    }));
+  };
+  
+  const updateCertificates = (certificates: ResumeData['certificates']) => {
+    setResumeData(prev => ({
+      ...prev,
+      certificates,
     }));
   };
   
@@ -124,12 +160,38 @@ const ResumeBuilder: React.FC = () => {
     setIsDownloading(true);
     
     try {
-      const canvas = await html2canvas(resumeElement, {
+      // First, make the resume visible even if it's not in the active tab
+      let tempElement = resumeElement;
+      let needsCleanup = false;
+      
+      if (activeTab !== 'preview') {
+        // If we're not in preview mode, create a temporary div for rendering
+        tempElement = document.createElement('div');
+        tempElement.style.position = 'absolute';
+        tempElement.style.left = '-9999px';
+        tempElement.style.top = '-9999px';
+        tempElement.id = 'temp-resume-for-pdf';
+        document.body.appendChild(tempElement);
+        
+        // Clone the resume preview content into this temporary div
+        const previewContent = resumeElement.cloneNode(true);
+        tempElement.appendChild(previewContent);
+        needsCleanup = true;
+      }
+      
+      const canvas = await html2canvas(tempElement.firstChild as HTMLElement, {
         scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#FFFFFF',
+        windowWidth: 900,
+        windowHeight: 1200
       });
+      
+      // Clean up temp element if we created one
+      if (needsCleanup) {
+        document.body.removeChild(tempElement);
+      }
       
       const imgData = canvas.toDataURL('image/png');
       
@@ -205,9 +267,19 @@ const ResumeBuilder: React.FC = () => {
                 onChange={updateWorkExperience}
               />
               
+              <ProjectsSection
+                projects={resumeData.projects}
+                onChange={updateProjects}
+              />
+              
               <EducationSection
                 education={resumeData.education}
                 onChange={updateEducation}
+              />
+              
+              <CertificatesSection
+                certificates={resumeData.certificates}
+                onChange={updateCertificates}
               />
               
               <SkillsSection
